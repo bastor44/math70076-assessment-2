@@ -259,7 +259,242 @@ ui <- fluidPage(
 
 
 
-
+#### Server ####
+# server to run app
+server <- function(input, output, session) {
+  ##### School Search tab server #####
+  # reactive for search button
+  # design card layout here - card for each school
+  # include a checkbox to add to school compare page 
+  
+  # filter schools based on criteria in input$region-select, etc
+  filtered_schools <- reactive({
+    filter_inputs <- list(region_select = input$region_select, 
+                          state_select = input$state_select, 
+                          urban_select = input$urban_select, 
+                          city_select = input$city_select, 
+                          school_name_search = input$school_name_search, 
+                          size = input$size,
+                          pub_priv = input$pub_priv, 
+                          input$school_type, 
+                          cost = input$cost, 
+                          degree= input$degree)
+    
+    req(input$search) # only filter when search button is pressed
+    filter_schools(institutions, filter_inputs)
+  })
+  
+  # store schools for comparison
+  compare_list <- reactiveValues(selected=character()) 
+  
+  # only show results when search button is pressed
+  observeEvent(input$search, { 
+    schools_data <- filtered_schools()
+    n_results <- nrow(schools_data)
+    
+    output$school_search_output <- renderUI({
+      if (nrow(schools_data)==0) {
+        return(h4("No schools found matching your criteria."))
+      }
+      
+      tagList(
+        h3(paste(n_results, "Schools matching your criteria")), 
+        
+        fluidRow(
+          lapply(1:nrow(schools_data), function(i) {
+            school <- schools_data[i, ]
+            checkbox_id <- paste0("compare_", i)
+            
+            # observe adds to comparison list
+            observeEvent(input[[checkbox_id]], {
+              if (isTRUE(input[[checkbox_id]])) {
+                if (!(school$INSTNM %in% compare_list$selected)) {
+                  compare_list$selected <- c(compare_list$selected, school$INSTNM)
+                } else {
+                  compare_list$selected <- (compare_list$selected[compare_list$selected != school$INSTM])
+                }
+              }
+            })
+            
+            column(
+              width=4, 
+              card(
+                # school name 
+                card_header(h4(school$INSTNM)),
+                
+                # location 
+                p(strong("Location: "), ifelse(is.na(school$CITY), "Unavailable", 
+                                               paste0(school$CITY, ", ", 
+                                                      states_map$LABEL[states_map$VALUE == school$ST_FIPS]))),
+                p(strong("Address: "), ifelse(is.na(school$ADDR), 
+                                              "Address unavailable", school$ADDR)), 
+                
+                # additional info 
+                p(strong("Undergraduate Enrollment: "), school$UG), 
+                p(strong("Type: "), 
+                  type_pp_map$LABEL[type_pp_map$VALUE == school$CONTROL]), 
+                p(strong("Acceptance Rate: "), 
+                  ifelse(is.na(school$ADM_RATE), 
+                         "Unavailable",  
+                         paste0(round(school$ADM_RATE*100), "%"))),
+                
+                # test scores 
+                p(strong("Median SAT (Math): "),
+                  ifelse(is.na(school$SATMTMID), 
+                         "Unavailable", 
+                         school$SATMTMID)), 
+                p(strong("Median SAT (Reading): "),
+                  ifelse(is.na(school$SATVRMID), 
+                         "Unavailable", 
+                         school$SATVRMID)),
+                p(strong("Median ACT Composite: "), 
+                  ifelse(is.na(school$ACTCMMID), 
+                         "Unavailable", 
+                         school$ACTCMMID)),
+                
+                # graduation rate
+                p(strong("Graduation Rate"), 
+                  # look at different columns for 4yr vs 2yr 
+                  ifelse(is.na(school$C150_4), 
+                         paste0(round(school$C150_L4*100), "%"), 
+                         paste0(round(school$C150_4*100), "%"))
+                ),
+                
+                # cost
+                p(strong("Tuition"), " (In-State): ", 
+                  ifelse(is.na(school$TUITIONFEE_IN), 
+                         "Unavailable", 
+                         paste0("$", school$TUITIONFEE_IN, ".00"))), 
+                p(strong("Tuition"), " (Out-of-State): ", 
+                  ifelse(is.na(school$TUITIONFEE_OUT), 
+                         "Unavailable", 
+                         paste0("$", school$TUITIONFEE_OUT, ".00"))),
+                
+                # student-faculty ratio
+                p(strong("Student-Faculty Ratio: "), 
+                  ifelse(is.na(school$STUFACR), 
+                         "Unavailable", 
+                         round(school$STUFACR, 1))), 
+                
+                # gender split
+                p(strong("Percent Female: "), 
+                  ifelse((school$FEMALE=="PS" | is.na(school$FEMALE)),
+                         "Unavailable", 
+                         paste0(round(as.numeric(school$FEMALE) * 100), "%"))),
+                
+                # URL 
+                p(a(href=school$INSTURL, target="_blank", "Visit School Website"), 
+                  "(Opens in new window)"),
+                
+                # check box to add to comparison 
+                checkboxInput(
+                  inputId=checkbox_id,
+                  label= "Add to Comparison",
+                  value=FALSE)
+              )
+            )
+          })
+        )
+      )
+    })
+  })
+  
+  # clear search criteria and results when clear button pressed
+  observeEvent(input$clear, { 
+    
+    updateSelectInput(session, inputId="region_select", selected=character(0))
+    updateSelectInput(session, "state_select", selected=character(0))
+    updateCheckboxGroupInput(session, "urban_select", selected=character(0))
+    updateTextInput(session, "city_select", value="")
+    updateTextInput(session,"school_name_search", value="")
+    updateSelectInput(session,"size", selected=character(0))
+    updateSelectInput(session,"pub_priv", selected=character(0))
+    updateSelectInput(session,"school_type", selected=character(0))
+    updateSliderInput(session,"cost", value=50000)
+    updateCheckboxGroupInput(session,"degree", selected=character(0))
+    
+    output$school_search_output <- renderUI({})
+  })
+  
+  ##### School Compare tab server#####
+  # schools_to_compare <- reactive({
+  #   
+  # })
+  
+  output$compare_output <- renderUI({
+    if (length(compare_list$selected)==0){
+      return(h3("No schools selected for comparison"))
+    } 
+    
+    tagList(
+      h3("Schools selected for comparison:"), 
+      lapply(compare_list$selected, function(name) {
+        p(name)
+      })
+    )
+  })
+  
+  # clear search with button 
+  observeEvent(input$reset_comparison, {
+    compare_list$selected <- character()
+  })
+  
+  # should have cards for each of those that were selected to compare on School Search page
+  # reactive order by select (results should appear whether or not )
+  # selected_schools <- reactive({
+  #   selected <- sapply(1:nrow(filtered_schools), function(i) {
+  #     input[[paste0("compare_",i)]]
+  #   })
+  #   
+  #   filtered_schools[selected==TRUE, ]
+  # })
+  # 
+  # sort_criteria <- reactive({
+  #   sort_by <- input$sort
+  # })
+  # 
+  # output$sort_output <- renderUI({
+  #   schools_to_compare <- selected_schools() |>
+  #     sort_by(sort_criteria)
+  #   
+  #   if (nrow(selected_schools==0)) {
+  #     return("No schools to compare")
+  #   }
+  #   
+  #   renderDataTable({
+  #     schools_to_compare |>
+  #       select(school_name, city, state, size, cost, acceptance_rate, 
+  #              graduation_rate, median_income, url, percent_f, median_sat,
+  #              median_act, median_gpa)
+  #   })
+  # })
+  
+  ##### User Compare tab server #####
+  # create graphs immediately based on school name
+  # eventReactive(input$school_name, {
+  #   renderUI({
+  #     # create plots for school 
+  #     # get gpa, sat, act quartiles/median from data, build plausible distribution
+  #     
+  #     output$mystats_output <- renderUI({
+  #       # create plots and comparisons based on input
+  #       tagList(
+  #         plotOutput("gpa_comparison_plot"),
+  #         plotOutput("sat_comparison_plot"),
+  #         plotOutput("act_comparison_plot")
+  #       )
+  #     })
+  #   })
+  # })
+  # 
+  # # add lines/percentiles to graphs when "compare" button is clicked 
+  # observeEvent(input$compare, {
+  #   output$gpa_comparison_plot <- renderPlot({
+  #     # create plot with user's input data 
+  #   })
+  # })
+  
+}
 
 
 # run app
