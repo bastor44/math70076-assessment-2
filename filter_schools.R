@@ -118,10 +118,10 @@ degree_map <- list(
 ##### FUNCTION TO FILTER SCHOOLS #####
 #' filter_schools
 #'
-#' @param data 
-#' @param inputs 
+#' @param data - institutions
+#' @param inputs - school search criteria input by the user
 #'
-#' @returns
+#' @returns data - data frame of schools matching the search criteria 
 #' @export
 #'
 #' @examples
@@ -199,10 +199,15 @@ filter_schools <- function(data, user_input) {
   # desired columns of filtered data 
   data <- data |>
     select(INSTNM, CITY, ST_FIPS, ADDR, CCSIZSET, UGDS, CONTROL, ADM_RATE, 
-           SATVRMID, SATMTMID, SATWRMID, ACTCMMID, ACTENMID, ACTMTMID, ACTWRMID, 
-           C150_4, C150_L4, TUITIONFEE_IN, TUITIONFEE_OUT, STUFACR, FEMALE, 
+           SATVRMID, SATMTMID, SATWRMID, SAT_AVG, ACTCMMID, ACTENMID, ACTMTMID, 
+           ACTWRMID, C150_4, C150_L4, TUITIONFEE_IN, TUITIONFEE_OUT, STUFACR, FEMALE, 
            INSTURL) |>
     filter(!is.na(INSTNM))
+  
+  # add https to urls so they open properly when clicked on 
+  data <- data |>
+    mutate(INSTURL = ifelse(!str_detect(INSTURL, "https://"), 
+      paste0("https://", INSTURL), INSTURL))
   
   return(data)
 }
