@@ -3,11 +3,11 @@ library(shiny)
 library(tidyverse)
 library(bslib)
 library(RSQLite)
-
+library(leaflet)
 
 # load functions from other scripts
 # source(knitr::purl("filename.qmd", output=tempfile(), quiet=TRUE))
-source(knitr::purl("school_search_filter.R", output=tempfile(), quiet=TRUE))
+source(knitr::purl("filter_schools.R", output=tempfile(), quiet=TRUE))
 
 #### UI ####
 # set up User Interface 
@@ -154,25 +154,15 @@ ui <- fluidPage(
                  # inputs
                  # School Name
                  textInput(
-                   inputId="school-name",
+                   inputId="school_name",
                    label="School Name",
                    placeholder="Enter school name"
-                 ),
-                 
-                 # GPA
-                 numericInput(
-                   inputId="gpa", 
-                   label="GPA", 
-                   value=0.0, 
-                   min=0.0, 
-                   max=5.0,
-                   step=0.01
                  ),
                  
                  # SAT scores 
                  layout_columns(
                    numericInput(
-                     inputId="sat-rw", 
+                     inputId="sat_rw", 
                      label="SAT Score (Reading and Writing)",
                      value=NA, 
                      min=200,
@@ -180,7 +170,7 @@ ui <- fluidPage(
                      step=1
                    ),
                    numericInput(
-                     inputId="sat-m", 
+                     inputId="sat_m", 
                      label="SAT Score (Math)", 
                      value=NA,
                      min=200,
@@ -192,23 +182,16 @@ ui <- fluidPage(
                  # ACT Scores 
                  layout_columns(
                    numericInput(
-                     inputId="act-m",
+                     inputId="act_m",
                      label="ACT Math Score",
                      value=NA, 
                      min=1,
                      max=36,
                      step=1
                    ),
+                  
                    numericInput(
-                     inputId="act-s",
-                     label="ACT Science Score",
-                     value=NA,
-                     min=1,
-                     max=36, 
-                     step=1
-                   ),
-                   numericInput(
-                     inputId="act-e",
+                     inputId="act_e",
                      label="ACT English Score",
                      value=NA, 
                      min=1,
@@ -217,7 +200,7 @@ ui <- fluidPage(
                    ), 
                    numericInput(
                      inputId="act-r",
-                     label="ACT Reading Score",
+                     label="ACT Writing Score",
                      value=NA, 
                      min=1,
                      max=36,
@@ -225,20 +208,13 @@ ui <- fluidPage(
                    )
                  ),
                  numericInput(
-                   inputId="act-comp",
+                   inputId="act_comp",
                    label="ACT Composite Score",
                    value=NA,
                    min=1,
                    max=36,
                    step=1
                  ), 
-                 
-                 # include demographic info?
-                 checkboxInput(
-                   inputId="demo-indicator", 
-                   label="View Demographic Information"
-                 ),
-                 # if this is checked, add additional field for gender, race/ethnicity, socioeconomic background
                  
                  actionButton(
                    inputId="compare",
@@ -248,10 +224,11 @@ ui <- fluidPage(
                
                mainPanel(
                  uiOutput("mystats_output")
-                 # want to create distributions of gpa/scores if possible and add a line + percentile for input value
-                 # if demographics included, add pie charts, highlighting which demo user falls into
+                 # want to create distributions of scores and add a line + percentile for input value
                  # add somewhere analysis of how good a match the user is for the school and how "likely" they are to 
                  #      be accepted (*make sure there is a note saying there is no guarantee)
+                 
+                 # ideally a map with the schools cooridinates and user's (if input)
                )
              ))
   )
