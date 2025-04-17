@@ -153,26 +153,42 @@ ui <- fluidPage(
                sidebarPanel(
                  # inputs
                  # School Name
-                 textInput(
+                 #textInput(
+                 selectizeInput(
                    inputId="school_name",
                    label="School Name",
-                   placeholder="Enter school name"
+                   choices=NULL,
+                   multiple=FALSE,
+                   selected=NULL, 
+                   options=list(
+                     placeholder="Enter school name", 
+                     maxOptions=15
+                   )
+                   #placeholder="Enter school name"
                  ),
                  
                  # SAT scores 
                  layout_columns(
                    numericInput(
-                     inputId="sat_rw", 
-                     label="SAT Score (Reading and Writing)",
-                     value=NA, 
+                     inputId="sat_vr", 
+                     label="SAT Score (Reading)",
+                     value=500, 
                      min=200,
                      max=800,
                      step=1
                    ),
                    numericInput(
+                     inputId="sat_wr", 
+                     label="SAT Score (Writing)", 
+                     value=500, 
+                     min=200, 
+                     max=800, 
+                     step=1
+                   ), 
+                   numericInput(
                      inputId="sat_m", 
                      label="SAT Score (Math)", 
-                     value=NA,
+                     value=500,
                      min=200,
                      max=800,
                      step=1
@@ -184,7 +200,7 @@ ui <- fluidPage(
                    numericInput(
                      inputId="act_m",
                      label="ACT Math Score",
-                     value=NA, 
+                     value=18, 
                      min=1,
                      max=36,
                      step=1
@@ -193,24 +209,24 @@ ui <- fluidPage(
                    numericInput(
                      inputId="act_e",
                      label="ACT English Score",
-                     value=NA, 
+                     value=18, 
                      min=1,
                      max=36,
                      step=1
                    ), 
                    numericInput(
-                     inputId="act-r",
+                     inputId="act_r",
                      label="ACT Writing Score",
-                     value=NA, 
-                     min=1,
-                     max=36,
+                     value=6, 
+                     min=2,
+                     max=12,
                      step=1
                    )
                  ),
                  numericInput(
                    inputId="act_comp",
                    label="ACT Composite Score",
-                   value=NA,
+                   value=18,
                    min=1,
                    max=36,
                    step=1
@@ -223,7 +239,10 @@ ui <- fluidPage(
                ), 
                
                mainPanel(
-                 uiOutput("mystats_output")
+                 #leafletOutput(),
+                 uiOutput("scores_plots"),
+                 #textOutput("quantiles")
+                 #uiOutput("mystats_output")
                  # want to create distributions of scores and add a line + percentile for input value
                  # add somewhere analysis of how good a match the user is for the school and how "likely" they are to 
                  #      be accepted (*make sure there is a note saying there is no guarantee)
@@ -447,29 +466,102 @@ server <- function(input, output, session) {
   # })
   
   ##### User Compare tab server #####
-  # create graphs immediately based on school name
-  # eventReactive(input$school_name, {
-  #   renderUI({
-  #     # create plots for school 
-  #     # get gpa, sat, act quartiles/median from data, build plausible distribution
-  #     
-  #     output$mystats_output <- renderUI({
-  #       # create plots and comparisons based on input
-  #       tagList(
-  #         plotOutput("gpa_comparison_plot"),
-  #         plotOutput("sat_comparison_plot"),
-  #         plotOutput("act_comparison_plot")
-  #       )
-  #     })
-  #   })
-  # })
-  # 
-  # # add lines/percentiles to graphs when "compare" button is clicked 
-  # observeEvent(input$compare, {
-  #   output$gpa_comparison_plot <- renderPlot({
-  #     # create plot with user's input data 
-  #   })
-  # })
+  
+  # update school choices in drop down as user types
+  school_choices <- reactive({
+    unique(institutions$INSTNM)
+  })
+  observe({
+    updateSelectizeInput(session,
+                         "school_name", 
+                         choices=school_choices(), 
+                         server=TRUE)
+  })
+  
+  # store user scores for tests as they are input
+  user_scores <- reactive({
+    score_inputs <- list(
+      SAT_Math = input$sat_m, 
+      SAT_Reading = input$sat_vr, 
+      SAT_Writing = input$sat_wr,
+      ACT_Composite = input$act_comp,
+      ACT_Math = input$act_m, 
+      ACT_English = input$act_e, 
+      ACT_Writing = input$act_r 
+    )
+    return(score_inputs)
+  })
+  
+  # create graphs based on school name
+  test_plots <- reactive({
+    req(input$school_name)
+    
+    all_plots <- lapply(test_names, function(test){
+      plotId <- paste0("plot_", test)
+      user_score <- user_scores()[[test]]
+      
+      result <- plot_test_score(
+        data=institutions, 
+        school=input$school_name, 
+        test=test, 
+        #user_score=user_scores()[[test]]
+        user_score=user_score
+      )
+      
+      if (!is.null(result$plot)) {
+        result_plot <- result$plot
+        result_quant <- result$quantile
+      } else {
+        result_plot <- ggplot() + 
+          labs(title=paste("No data available for", test))
+        result_quant <- "No data available"
+      }
+       
+      return(list(test=test, plotId=plotId, result_plot=result_plot, 
+                  result_quant=result_quant, avg=result$avg, q25=result$q25,
+                  q75=result$q75))
+    })
+    
+    return(all_plots)
+  })
+
+  # only show graphs when button clicked 
+  observeEvent(input$compare, {
+    req(test_plots())
+    results <- test_plots()
+    
+    # create unique output Id for each plot
+    lapply(results, function(p){
+      plot_id <- p$plotId
+      plot <- p$result_plot
+      output[[plot_id]] <- renderPlot({
+        plot
+      })
+    })
+    
+    output$scores_plots <- renderUI({
+      tagList(
+        h3(input$school_name), 
+        fluidRow(
+            lapply(results, function(p){
+              column(
+                width=6, 
+                card(
+                plotOutput(outputId = p$plotId),
+                # add info below each plot
+                p(strong("Average", p$test, "Score:"), p$avg),
+                p(strong("25th percentile:"), p$q25),
+                p(strong("75th percentile:"), p$q75),
+                p(ifelse(p$result_quant=="No data available", 
+                         "", 
+                         paste0("You likely scored in the ", p$result_quant, "th percentile")))
+                )
+              )
+            })
+          )
+        )
+      })
+    })
   
 }
 
