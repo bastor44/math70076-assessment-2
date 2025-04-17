@@ -114,4 +114,4 @@ plot_test_score <- function(data, school,
 }
 
 
-## 
+## get lat/long for school and put it on a map, add marker for user if info provided
