@@ -137,6 +137,7 @@ ui <- fluidPage(
                
                mainPanel(
                  # uiOutput(outputId="sort_output")
+                 leafletOutput("map"),
                  uiOutput(outputId="compare_output")
                )
              )
@@ -239,7 +240,6 @@ ui <- fluidPage(
                ), 
                
                mainPanel(
-                 #leafletOutput(),
                  uiOutput("scores_plots"),
                  #textOutput("quantiles")
                  #uiOutput("mystats_output")
@@ -249,7 +249,12 @@ ui <- fluidPage(
                  
                  # ideally a map with the schools cooridinates and user's (if input)
                )
-             ))
+             )),
+    
+    ##### Analysis #####
+    tabPanel("Analysis",
+             uiOutput("analysis")
+    )
   )
 )
 
@@ -413,9 +418,19 @@ server <- function(input, output, session) {
   })
   
   ##### School Compare tab server#####
-  # schools_to_compare <- reactive({
-  #   
-  # })
+  # get list from the other page 
+  schools_to_comp <- reactive({
+    comp_schools <- compare_list()
+    compare_info(institutions, comp_schools)
+  })
+  
+  # map with markers for schools for comparison 
+  output$map <- renderLeaflet({
+    leaflet() |>
+      addTiles() |>
+      setView(lat=39.5, lng=-98.35, zoom=4) #|>
+      #addMarkers()
+  })
   
   output$compare_output <- renderUI({
     if (length(compare_list$selected)==0){
@@ -563,6 +578,19 @@ server <- function(input, output, session) {
       })
     })
   
+  
+  ##### Analysis tab #####
+  output$analysis <- renderUI({
+    tagList(
+      h1("Is it getting harder to go to college in the U.S.?"),
+      h3("Cost of Attendance vs. Inflation"),
+      # add saved plot image
+      p("The cost of attendance...."),
+      h3("Declining Admissions Rates"), 
+      # plot(s)
+      p("Admissions rates at colleges and universities in the United States...")
+    )
+  })
 }
 
 
