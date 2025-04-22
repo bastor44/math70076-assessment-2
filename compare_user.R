@@ -8,6 +8,25 @@ test_names <- list("SAT_Math", "SAT_Reading",  "SAT_Writing",
                    "ACT_English", "ACT_Writing")
 
 ## plot SAT/ACT scores and add line for user 
+#' plot_test_score
+#'
+#' @param data - data frame to use for comparison
+#' @param school - name of school for comparison
+#' @param test - desired test for comparison (SAT Math, Reading, or Writing, 
+#'               or ACT Composite, Math, English, or Writing)
+#' @param user_score - user's score on the desired test (optional)
+#'
+#' @returns avg - average (mean) score of the test at the selected school
+#' @returns q25, q75 - 25th and 75th percentile of test scores for the selected
+#'          test and school
+#' @returns plot - plot of test score distribution with mean and quartiles, 
+#'          includes a line for user score if input
+#' @returns quantile - estimated test score quantile of the user's input score
+#' @export
+#'
+#' @examples
+#' plot_test_score(data=institutions, school="University of Wisconsin-Madison", 
+#'                 test="SAT_Math", user_score=730)
 plot_test_score <- function(data, school, 
                             test=c("SAT_Math", "SAT_Reading",  "SAT_Writing", 
                                    "ACT_Composite", "ACT_Math", 
@@ -75,7 +94,7 @@ plot_test_score <- function(data, school,
   q75 <- school_data[ , str_detect(colnames(school_data), "75")]
   
   # make distribution - assume Normal distributions for all
-  #   not necesarily true 
+  #   not necessarily true 
   sd <- (q75 - q25)/2
   y <- dnorm(x, avg, sd)
   dist_data <- data.frame(x=x, y=y)
@@ -88,7 +107,8 @@ plot_test_score <- function(data, school,
     labs(x="Test score", y="Density",
          title=paste(test, "score distribution at \n", school)) +
     geom_vline(xintercept=avg, color="grey70", linetype="dashed", linewidth=1) + 
-    geom_vline(xintercept=c(q25, q75), color="grey90", linetype="dashed", linewidth=1) +
+    geom_vline(xintercept=c(q25, q75), color="grey90", linetype="dashed", 
+               linewidth=1) +
     theme(title=element_text(size=16), 
           axis.text=element_text(size=12), 
           axis.title=element_text(size=14))
@@ -112,6 +132,3 @@ plot_test_score <- function(data, school,
               plot=scores_plot, 
               quantile=user_quantile))
 }
-
-
-## get lat/long for school and put it on a map, add marker for user if info provided
