@@ -1,1 +1,0 @@
-##### Function to get desired information of schools for comparison ##### 
