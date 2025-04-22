@@ -6,8 +6,8 @@ library(RSQLite)
 library(leaflet)
 
 # load functions from other scripts
-# source(knitr::purl("filename.qmd", output=tempfile(), quiet=TRUE))
 source(knitr::purl("filter_schools.R", output=tempfile(), quiet=TRUE))
+source(knitr::purl("compare_user.R", output=tempfile(), quiet=TRUE))
 
 #### UI ####
 # set up User Interface 
@@ -119,16 +119,9 @@ ui <- fluidPage(
     
     ##### School Compare #####
     # Page for comparing schools - some analysis of comparisons 
-    tabPanel("School Compare",
+    tabPanel("Compare Schools",
              sidebarLayout(
                sidebarPanel(
-                 selectInput(
-                   inputId="sort", 
-                   label="Sort By",
-                   selected=NA,
-                   choices=c("Cost", "Size", "Acceptance Rate", 
-                             "Graduation Rate", "Median Income After Graduation")
-                 ),
                  
                  # reset comparison list
                  actionButton(inputId="reset_comparison", 
@@ -136,25 +129,19 @@ ui <- fluidPage(
                ), 
                
                mainPanel(
-                 # uiOutput(outputId="sort_output")
                  leafletOutput("map"),
-                 uiOutput(outputId="compare_output")
+                 DT::DTOutput(outputId="comparison_table")
                )
              )
     ), 
-    # add a card for each of the schools that were selected to add to comparison
-    # on School Search page (cards appear the same as on that page)
-    # enable ordering by cost, size, acceptance rate, grad rate, income after grad
-    # Also, say at top how many results there are
     
     ##### User Compare #####
     # Page for user to compare themselves to the school(s)
-    tabPanel("How do I stack up?",
+    tabPanel("Compare My Test Scores",
              sidebarLayout(
                sidebarPanel(
                  # inputs
                  # School Name
-                 #textInput(
                  selectizeInput(
                    inputId="school_name",
                    label="School Name",
@@ -165,7 +152,6 @@ ui <- fluidPage(
                      placeholder="Enter school name", 
                      maxOptions=15
                    )
-                   #placeholder="Enter school name"
                  ),
                  
                  # SAT scores 
@@ -235,19 +221,13 @@ ui <- fluidPage(
                  
                  actionButton(
                    inputId="compare",
-                   label="Show me how I compare"
+                   label="Show how I compare"
                  )
                ), 
                
                mainPanel(
                  uiOutput("scores_plots"),
-                 #textOutput("quantiles")
-                 #uiOutput("mystats_output")
-                 # want to create distributions of scores and add a line + percentile for input value
-                 # add somewhere analysis of how good a match the user is for the school and how "likely" they are to 
-                 #      be accepted (*make sure there is a note saying there is no guarantee)
                  
-                 # ideally a map with the schools cooridinates and user's (if input)
                )
              )),
     
@@ -264,9 +244,6 @@ ui <- fluidPage(
 # server to run app
 server <- function(input, output, session) {
   ##### School Search tab server #####
-  # reactive for search button
-  # design card layout here - card for each school
-  # include a checkbox to add to school compare page 
   
   # filter schools based on criteria in input$region-select, etc
   filtered_schools <- reactive({
@@ -286,7 +263,7 @@ server <- function(input, output, session) {
   })
   
   # store schools for comparison
-  compare_list <- reactiveValues(selected=character()) 
+  compare_list <- reactiveValues(selected=list()) 
   
   # only show results when search button is pressed
   observeEvent(input$search, { 
@@ -299,20 +276,21 @@ server <- function(input, output, session) {
       }
       
       tagList(
-        h3(paste(n_results, "Schools matching your criteria")), 
+        h3(paste(n_results, "schools matching your criteria.")), 
         
         fluidRow(
           lapply(1:nrow(schools_data), function(i) {
-            school <- schools_data[i, ]
+            school <- schools_data[i, , drop=FALSE]
             checkbox_id <- paste0("compare_", i)
             
-            # observe adds to comparison list
+            # observers for checkboxes to add to comparison list
             observeEvent(input[[checkbox_id]], {
+              school_id <- school$INSTNM
               if (isTRUE(input[[checkbox_id]])) {
-                if (!(school$INSTNM %in% compare_list$selected)) {
-                  compare_list$selected <- c(compare_list$selected, school$INSTNM)
+                if (!(school_id %in% names(compare_list$selected))) {
+                  compare_list$selected[[school_id]] <- school
                 } else {
-                  compare_list$selected <- (compare_list$selected[compare_list$selected != school$INSTM])
+                  compare_list$selected[[school_id]] <- NULL
                 }
               }
             })
@@ -324,11 +302,15 @@ server <- function(input, output, session) {
                 card_header(h4(school$INSTNM)),
                 
                 # location 
-                p(strong("Location: "), ifelse(is.na(school$CITY), "Unavailable", 
-                                               paste0(school$CITY, ", ", 
-                                                      states_map$LABEL[states_map$VALUE == school$ST_FIPS]))),
-                p(strong("Address: "), ifelse(is.na(school$ADDR), 
-                                              "Address unavailable", school$ADDR)), 
+                p(strong("Location: "), 
+                  ifelse(is.na(school$CITY), 
+                         "Unavailable",
+                         paste0(school$CITY, ", ",
+                                states_map$LABEL[states_map$VALUE == school$ST_FIPS]))),
+                p(strong("Address: "), 
+                  ifelse(is.na(school$ADDR), 
+                         "Address unavailable", 
+                         school$ADDR)), 
                 
                 # additional info 
                 p(strong("Undergraduate Enrollment: "), school$UG), 
@@ -418,67 +400,66 @@ server <- function(input, output, session) {
   })
   
   ##### School Compare tab server#####
-  # get list from the other page 
-  schools_to_comp <- reactive({
-    comp_schools <- compare_list()
-    compare_info(institutions, comp_schools)
-  })
-  
-  # map with markers for schools for comparison 
   output$map <- renderLeaflet({
-    leaflet() |>
-      addTiles() |>
-      setView(lat=39.5, lng=-98.35, zoom=4) #|>
-      #addMarkers()
+    # if no schools selected, show empty map
+    if (length(compare_list$selected)==0) {
+      return(
+        leaflet() |>
+          addTiles() |>
+          setView(lat=39.5, lng=-98.35, zoom=4)
+    )}
+    
+    # if schools selected, add markers
+    selected_df <- do.call(rbind, compare_list$selected)
+    location_cols <- c("INSTNM", "LATITUDE", "LONGITUDE")
+    location_df <- selected_df[, location_cols]
+    
+    return(
+      leaflet(data=location_df) |>
+        addTiles() |>
+        setView(lat=39.5, lng=-98.35, zoom=4) |>
+        addMarkers(lat = ~LATITUDE, lng = ~LONGITUDE, label= ~INSTNM, 
+                   popup=~INSTNM)
+    )
   })
   
-  output$compare_output <- renderUI({
+  
+  # table with schools for comparison 
+  output$comparison_table <- DT::renderDT({
+    # if no schools selected, message
     if (length(compare_list$selected)==0){
-      return(h3("No schools selected for comparison"))
-    } 
+      return(data.frame(Message="No schools selected for comparison"))
+    }
     
-    tagList(
-      h3("Schools selected for comparison:"), 
-      lapply(compare_list$selected, function(name) {
-        p(name)
-      })
-    )
+    # if schools selected, report in a table
+    selected_df <- do.call(rbind, compare_list$selected)
+    selected_cols <- c( "CITY", "ST_FIPS", "UGDS", "ADM_RATE", 
+                       "TUITIONFEE_IN", "TUITIONFEE_OUT", "STUFACR", "FEMALE")
+    compare_df <- selected_df[, selected_cols]
+    
+    # format table nicely
+    compare_df <- compare_df |>
+      mutate(STATE = states_map$LABEL[states_map$VALUE==ST_FIPS],
+             ADM_RATE = paste0(round(ADM_RATE*100, 1), "%"),
+             TUITIONFEE_IN = paste0("$", TUITIONFEE_IN, ".00"),
+             TUITIONFEE_OUT = paste0("$", TUITIONFEE_OUT, ".00"),
+             FEMALE = paste0(round(as.numeric(FEMALE)*100, 0), "%")) |>
+      rename(UNDERGRADUATES = UGDS,
+             "ADMISSION RATE" = ADM_RATE,
+             "In-State Tuition" = TUITIONFEE_IN,
+             "Out-of-State Tutition" = TUITIONFEE_OUT,
+             "Student:Faculty Ratio" = STUFACR,
+             "Percent Female" = FEMALE) |>
+      select(-ST_FIPS) |>
+      relocate(STATE, .after=CITY)
+    
+    return(compare_df)
   })
   
   # clear search with button 
   observeEvent(input$reset_comparison, {
     compare_list$selected <- character()
   })
-  
-  # should have cards for each of those that were selected to compare on School Search page
-  # reactive order by select (results should appear whether or not )
-  # selected_schools <- reactive({
-  #   selected <- sapply(1:nrow(filtered_schools), function(i) {
-  #     input[[paste0("compare_",i)]]
-  #   })
-  #   
-  #   filtered_schools[selected==TRUE, ]
-  # })
-  # 
-  # sort_criteria <- reactive({
-  #   sort_by <- input$sort
-  # })
-  # 
-  # output$sort_output <- renderUI({
-  #   schools_to_compare <- selected_schools() |>
-  #     sort_by(sort_criteria)
-  #   
-  #   if (nrow(selected_schools==0)) {
-  #     return("No schools to compare")
-  #   }
-  #   
-  #   renderDataTable({
-  #     schools_to_compare |>
-  #       select(school_name, city, state, size, cost, acceptance_rate, 
-  #              graduation_rate, median_income, url, percent_f, median_sat,
-  #              median_act, median_gpa)
-  #   })
-  # })
   
   ##### User Compare tab server #####
   
