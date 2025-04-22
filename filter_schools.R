@@ -4,7 +4,6 @@ require(roxygen2)
 
 ##### Load Data #####
 institutions <- read.csv("Most-Recent-Cohorts-Institution.csv")
-# field_of_study <- read.csv("Most-Recent-Cohorts-Field-of-Study.csv")
 data_dictionary <- read.csv("institution_data_dictionary.csv")
 
 ##### School Search Request #####
@@ -35,14 +34,13 @@ data_dictionary <- read.csv("institution_data_dictionary.csv")
 # acceptance rate - ADM_RATE/ADM_RATE_SUPP (suppressed for n<30)
 # SAT - SATVRMID, SATMTMID, SATWRMID (midpoints for reading, math, writing) or 
 #       SATVR50, SATMT50 (50th percentile)
-# ACT - ACTCMMID, ACTENMID, ACTMTMID, ACTWRMID (midpoints cummulative, english, 
+# ACT - ACTCMMID, ACTENMID, ACTMTMID, ACTWRMID (midpoints cumulative, English, 
 #       math, writing) or ACTCM50, ACTEN50, ACTMT50
 # grad rate - C150_4, C150_L4 (completion rate for first-time full-time students 
 #             @ 4yr and less than 4yr inst)
 # cost - TUITIONFEE_IN and TUITIONFEE_OUT
 # student/faculty ratio - STUFACR (undergrad to instructional faculty ratio)
-# gender split - FEMALE (frac of female students); UGDS_MEN, UGDS_WOMEN
-#               # of undergrad students who are ___
+# gender split - FEMALE (fraction of female students)
 # URL - INSTURL
 
 
@@ -125,6 +123,7 @@ degree_map <- list(
 #' @export
 #'
 #' @examples
+#' filter_schools(institutions, user_input=list(state_select="Wisconsin""))
 filter_schools <- function(data, user_input) {
   # regions
   if (!is.null(user_input$region_select) && length(user_input$region_select)>0) {
@@ -145,11 +144,8 @@ filter_schools <- function(data, user_input) {
     selected_locales <- unlist(locale_map[user_input$urban_select])
     data <- data[data$LOCALE %in% selected_locales, ]
   }
-  
-  # city (text user_input)
-  # if (nzchar(user_input$city_select)) {
-  #   data <- data[grepl(user_input$city_select, data$CITY, ignore.case = TRUE), ]
-  # }
+
+  # city 
   if (!is.null(user_input$city_select) && nzchar(user_input$city_select)) {
     data <- data[
       !is.na(data$CITY) &
@@ -200,8 +196,8 @@ filter_schools <- function(data, user_input) {
   data <- data |>
     select(INSTNM, CITY, ST_FIPS, ADDR, CCSIZSET, UGDS, CONTROL, ADM_RATE, 
            SATVRMID, SATMTMID, SATWRMID, SAT_AVG, ACTCMMID, ACTENMID, ACTMTMID, 
-           ACTWRMID, C150_4, C150_L4, TUITIONFEE_IN, TUITIONFEE_OUT, STUFACR, FEMALE, 
-           INSTURL) |>
+           ACTWRMID, C150_4, C150_L4, TUITIONFEE_IN, TUITIONFEE_OUT, STUFACR, 
+           FEMALE, INSTURL, LATITUDE, LONGITUDE) |>
     filter(!is.na(INSTNM))
   
   # add https to urls so they open properly when clicked on 
