@@ -377,7 +377,9 @@ server <- function(input, output, session) {
               )
             )
           })
-        )
+        ),
+        
+        p("Data from: U.S. Department of Education, College Scorecard")
       )
     })
   })
