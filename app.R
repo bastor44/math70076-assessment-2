@@ -441,7 +441,7 @@ server <- function(input, output, session) {
     
     # format table nicely
     compare_df <- compare_df |>
-      mutate(STATE = states_map$LABEL[states_map$VALUE==ST_FIPS],
+      mutate(STATE = states_map$LABEL[as.integer(states_map$VALUE)==ST_FIPS],
              ADM_RATE = paste0(round(ADM_RATE*100, 1), "%"),
              TUITIONFEE_IN = paste0("$", TUITIONFEE_IN, ".00"),
              TUITIONFEE_OUT = paste0("$", TUITIONFEE_OUT, ".00"),
