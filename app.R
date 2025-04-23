@@ -567,7 +567,17 @@ server <- function(input, output, session) {
     tagList(
       h1("Is it getting harder to go to college in the U.S.?"),
       h3("Cost of Attendance vs. Inflation"),
-      # add saved plot image
+      # add saved plot images
+      fluidRow(
+        column(
+          width=6, 
+          imageOutput("coa_plot")
+        ), 
+        column(
+          width=6, 
+          imageOutput("pp_plot")
+        )
+      ), 
       p("The cost of attendance...."),
       
       h3("Declining Admissions Rates"), 
@@ -605,6 +615,14 @@ server <- function(input, output, session) {
   
   output$selective_admissions <- renderImage({
     list(src="images/selective_admissions.png", height="100%")
+  }, deleteFile = FALSE)
+  
+  output$coa_plot <- renderImage({
+    list(src="images/coa_plot.png", height="100%")
+  }, deleteFile = FALSE)
+  
+  output$pp_plot <- renderImage({
+    list(src="image/pp_plot.png", height="100%")
   }, deleteFile = FALSE)
 }
 
