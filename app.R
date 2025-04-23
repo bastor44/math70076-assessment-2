@@ -232,7 +232,7 @@ ui <- fluidPage(
              )),
     
     ##### Analysis #####
-    tabPanel("Analysis",
+    tabPanel("Article",
              uiOutput("analysis")
     )
   )
@@ -622,7 +622,7 @@ server <- function(input, output, session) {
   }, deleteFile = FALSE)
   
   output$pp_plot <- renderImage({
-    list(src="image/pp_plot.png", height="100%")
+    list(src="images/pp_plot.png", height="100%")
   }, deleteFile = FALSE)
 }
 
