@@ -569,11 +569,43 @@ server <- function(input, output, session) {
       h3("Cost of Attendance vs. Inflation"),
       # add saved plot image
       p("The cost of attendance...."),
+      
       h3("Declining Admissions Rates"), 
-      # plot(s)
+      # admissions plots
+      fluidRow(
+        column(
+          width=6, 
+          imageOutput("admissions_plot")
+        ), 
+        column(
+          width=6, 
+          imageOutput("selective_admissions")
+        )
+      ),
+      h4("Top 10 most selective colleges and universities: "), 
+      tags$ol(
+        tags$li("Alliant International University-San Diego"),
+        tags$li("DeVry University-Texas"),
+        tags$li("California Institute of Technology"),
+        tags$li("Harvard University"), 
+        tags$li("Standford University"), 
+        tags$li("Columbia University in the City of New York"),
+        tags$li("Massachusetts Institute of Technology"),
+        tags$li("Yale University"),
+        tags$li("Brown University"), 
+        tags$li("University of Chicago")
+      ),
       p("Admissions rates at colleges and universities in the United States...")
     )
   })
+  
+  output$admissions_plot <- renderImage({
+    list(src="images/admissions_plot.png", height="100%")
+  }, deleteFile = FALSE)
+  
+  output$selective_admissions <- renderImage({
+    list(src="images/selective_admissions.png", height="100%")
+  }, deleteFile = FALSE)
 }
 
 
