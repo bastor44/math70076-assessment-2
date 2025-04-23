@@ -3,8 +3,8 @@ require(tidyverse)
 require(roxygen2)
 
 ##### Load Data #####
-institutions <- read.csv("Most-Recent-Cohorts-Institution.csv")
-data_dictionary <- read.csv("institution_data_dictionary.csv")
+institutions <- read.csv("data/Most-Recent-Cohorts-Institution.csv")
+data_dictionary <- read.csv("data/institution_data_dictionary.csv")
 
 ##### School Search Request #####
 # Filter data from institutions dataset to match search criteria 

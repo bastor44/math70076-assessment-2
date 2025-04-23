@@ -4,7 +4,7 @@ require(ggplot2)
 require(tidyverse)
 
 source(knitr::purl("filter_schools.R", output=tempfile(), quiet=TRUE))
-institutions <- read.csv("Most-Recent-Cohorts-Institution.csv")
+institutions <- read.csv("data/Most-Recent-Cohorts-Institution.csv")
 
 ##### Load data 1996/97 - 2022/23 #####
 year_ids <- c("1996_97", "1997_98", "1998_99", "1999_00", "2000_01", "2001_02", 
@@ -17,10 +17,10 @@ n_years <- length(year_ids)
 
 # load all admissions and test data
 if (file.exists("adm_test_data.csv")){
-  adm_test_data <- read.csv("adm_test_data.csv")
+  adm_test_data <- read.csv("data/adm_test_data.csv")
 } else {
   adm_test_dfs <- lapply(year_ids, function(y){
-    file_name <- paste0("MERGED", y, "_PP.csv")
+    file_name <- paste0("data/MERGED", y, "_PP.csv")
     read.csv(file_name) |>
       select(INSTNM, ADM_RATE, SATVRMID, SATMTMID, SATWRMID, 
              ACTCMMID, ACTENMID, ACTMTMID, ACTWRMID) |>
@@ -59,9 +59,9 @@ if (file.exists("adm_test_data.csv")){
     merge(current_adm_test, by="INSTNM")
   
   # save data frame
-  write.csv(adm_test_data, "adm_test_data.csv", row.names=FALSE)
+  write.csv(adm_test_data, "data/adm_test_data.csv", row.names=FALSE)
   
-  adm_test_data <- read.csv("adm_test_data.csv")
+  adm_test_data <- read.csv("data/adm_test_data.csv")
 }
 
 
