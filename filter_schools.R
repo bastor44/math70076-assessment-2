@@ -208,3 +208,4 @@ filter_schools <- function(data, user_input) {
   return(data)
 }
 
+
