@@ -124,11 +124,14 @@ pp_plot <- ggplot(coa_pp, aes(x=year, y=AVG, group=CONTROL, color=CONTROL)) +
   theme(title=element_text(size=14), 
         axis.text=element_text(size=12), 
         axis.title=element_text(size=14), 
-        panel.background = element_rect(fill=NA)) +
+        panel.background = element_rect(fill=NA), 
+        legend) +
   theme(axis.text.x = element_text(angle=45, hjust=1)) +
-  theme(legend.position = "none")+
+  theme(legend.title = element_text(size=12),
+        legend.text = element_text(size=12))+
   labs(x="Year", 
        y="Out-of-State Tuition ($)", 
+       color="Instituition \n Type", 
        title="Out-of-state tuition for U.S. colleges and 
        universities, 2000-2024, stratified by Public/Private", 
        subtitle="Not adjusted for inflation", 
@@ -137,7 +140,7 @@ pp_plot <- ggplot(coa_pp, aes(x=year, y=AVG, group=CONTROL, color=CONTROL)) +
        The cost of private institutions has been rising at a faster rate than their public counterparts.")
 
 pp_plot
-ggsave("images/pp_plot.png", pp_plot, height=5, width=6)
+ggsave("images/pp_plot.png", pp_plot, height=5, width=6.5)
 
 
 # adjust for inflation 
