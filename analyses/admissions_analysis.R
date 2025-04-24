@@ -3,7 +3,7 @@
 require(ggplot2)
 require(tidyverse)
 
-source(knitr::purl("filter_schools.R", output=tempfile(), quiet=TRUE))
+source(knitr::purl("R/filter_schools.R", output=tempfile(), quiet=TRUE))
 institutions <- read.csv("data/Most-Recent-Cohorts-Institution.csv")
 
 ##### Load data 1996/97 - 2022/23 #####
@@ -16,7 +16,7 @@ n_years <- length(year_ids)
 
 
 # load all admissions and test data
-if (file.exists("adm_test_data.csv")){
+if (file.exists("data/adm_test_data.csv")){
   adm_test_data <- read.csv("data/adm_test_data.csv")
 } else {
   adm_test_dfs <- lapply(year_ids, function(y){

@@ -1,7 +1,7 @@
 require(ggplot2)
 require(tidyverse)
 
-source(knitr::purl("filter_schools.R", output=tempfile(), quiet=TRUE))
+source(knitr::purl("R/filter_schools.R", output=tempfile(), quiet=TRUE))
 institutions <- read.csv("data/Most-Recent-Cohorts-Institution.csv")
 
 # type pub/priv
@@ -264,3 +264,15 @@ adj_pp_plot <- ggplot(adj_pp, aes(x=year, y=AVG, group=CONTROL, color=CONTROL)) 
 adj_pp_plot
 
 ggsave("images/adj_pp.png", adj_pp_plot, height=5, width=6.5)
+
+
+## Most expensive (not adjusted)
+most_exp <- coa_data |>
+  select(INSTNM, CONTROL, TUITION_OUT_2023_24) |>
+  slice_max(n=200, order_by=TUITION_OUT_2023_24)
+most_exp
+
+hist(coa_data$TUITION_OUT_2023_24[coa_data$CONTROL=="Private" & 
+                                    !is.na(coa_data$TUITION_OUT_2023_24)])
+
+sum(coa_data$TUITION_OUT_2023_24 >= 50000, na.rm=TRUE)
