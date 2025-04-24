@@ -576,6 +576,14 @@ server <- function(input, output, session) {
         column(
           width=6, 
           imageOutput("pp_plot")
+        ),
+        column(
+          width=6, 
+          imageOutput("adj_plot")
+        ),
+        column(
+          width=6,
+          imageOutput("adj_pp")
         )
       ), 
       p("The cost of attendance...."),
@@ -605,7 +613,9 @@ server <- function(input, output, session) {
         tags$li("Brown University"), 
         tags$li("University of Chicago")
       ),
-      p("Admissions rates at colleges and universities in the United States...")
+      p("Admissions rates at colleges and universities in the United States..."),
+      
+      p("Data from: U.S. Department of Education, College Scorecard and U.S. Bureau of Labor Statistics.")
     )
   })
   
@@ -623,6 +633,14 @@ server <- function(input, output, session) {
   
   output$pp_plot <- renderImage({
     list(src="images/pp_plot.png", height="100%")
+  }, deleteFile = FALSE)
+  
+  output$adj_plot <- renderImage({
+    list(src="images/adj_plot.png", height="100%")
+  }, deleteFile = FALSE)
+  
+  output$adj_pp <- renderImage({
+    list(src= "images/adj_pp.png", height="100%")
   }, deleteFile = FALSE)
 }
 
