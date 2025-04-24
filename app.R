@@ -6,13 +6,24 @@ library(RSQLite)
 library(leaflet)
 
 # load functions from other scripts
-source(knitr::purl("filter_schools.R", output=tempfile(), quiet=TRUE))
-source(knitr::purl("compare_user.R", output=tempfile(), quiet=TRUE))
+source(knitr::purl("R/filter_schools.R", output=tempfile(), quiet=TRUE))
+source(knitr::purl("R/compare_user.R", output=tempfile(), quiet=TRUE))
 
 #### UI ####
 # set up User Interface 
 ui <- fluidPage(
   theme = bs_theme(version=5), 
+  
+  # special style for first letters on article page
+  tags$head(
+    tags$style(HTML("
+                    .big-first-letter::first-letter{
+                    font-size: 200%; 
+                    font-weight: bold;
+                    color: #003e80; 
+                    }"
+    ))
+  ), 
   
   titlePanel("College Scorecard Shiny App"),
   tabsetPanel(
@@ -566,7 +577,7 @@ server <- function(input, output, session) {
   output$analysis <- renderUI({
     tagList(
       h1("Is it getting harder to go to college in the U.S.?"),
-      h3("Cost of Attendance vs. Inflation"),
+      h3("The rising cost of higher education"),
       # add saved plot images
       fluidRow(
         column(
@@ -586,7 +597,15 @@ server <- function(input, output, session) {
           imageOutput("adj_pp")
         )
       ), 
-      p("The cost of attendance...."),
+      
+      p(class="big-first-letter", "As the cost of living crisis continues to squeeze individuals and families more and more in the U.S., one huge expense has remained constant – college education. Since 2001, the first year for which the U.S. Department of Education (ED) College Scorecard provides data, the cost of attending college or university in the U.S. has steadily increased. Tuition fees at public and private institutions have risen year after year, burdening students and their families with higher and higher costs and, in many cases, loans."),
+      p("While the average cost of attending college has consistently grown from under $10,000 per year in 2000/01 to nearly double that in 2023/24, the rate at which these price hikes have been implemented has not been even across the board. Public institutions, which benefit from some state and federal funding, have seen moderate increases in (out-of-state) tuition fees from an average of just over $5,000 per year in 2000 and reaching an average of $12,500 per year for the 2023/24 school year. While this is still a significant amount of money for many Americans, the cost of attending a private institution has always been, and remains to be, much higher."),
+      p("Private colleges and universities had an average tuition of roughly $12,500 per year in 2000, more than double the average cost of their public counterparts. By the 2019/20 school year, that cost had climbed to over $25,000 per year, with over 200 of the 4,410 private institutions charging more than $50,000 per year. There was a small dip in the average cost for the 2019/20 school year, but prices continued to rise in subsequent years."),
+      p("The sticker price of a college education, especially at a private institution, can be shocking, and while the cost is not a small sum for most students and their families, there is some hope on the horizon. When adjusted for inflation, the price of higher education has been slowly coming down in recent years. Between 2000 and 2019, the price increases were happening faster than inflation was changing real wages. Since then, however, the inflation-adjusted average cost at both public and private institutions has returned to levels not seen since 2010, or earlier."),
+      p("This recent trend is a positive change for American students and their families, but it does not cancel out the fact that the cost of a college education in the U.S. makes it unaffordable for many, and lands many more in tremendous student loan debt. Calls for reform to American higher education have, so far, gone unanswered."),
+      
+      
+      br(), 
       
       h3("Declining Admissions Rates"), 
       # admissions plots
@@ -602,20 +621,25 @@ server <- function(input, output, session) {
       ),
       h4("Top 10 most selective colleges and universities: "), 
       tags$ol(
-        tags$li("Alliant International University-San Diego"),
-        tags$li("DeVry University-Texas"),
-        tags$li("California Institute of Technology"),
-        tags$li("Harvard University"), 
-        tags$li("Standford University"), 
-        tags$li("Columbia University in the City of New York"),
-        tags$li("Massachusetts Institute of Technology"),
-        tags$li("Yale University"),
-        tags$li("Brown University"), 
-        tags$li("University of Chicago")
+        tags$li("Alliant International University-San Diego (<1%)"),
+        tags$li("DeVry University-Texas (<1%)"),
+        tags$li("California Institute of Technology (2.69%)"),
+        tags$li("Harvard University (3.24%)"), 
+        tags$li("Standford University (3.68%)"), 
+        tags$li("Columbia University in the City of New York (3.95%)"),
+        tags$li("Massachusetts Institute of Technology (3.96%)"),
+        tags$li("Yale University (4.57%)"),
+        tags$li("Brown University (5.06%)"), 
+        tags$li("University of Chicago (5.43%)")
       ),
-      p("Admissions rates at colleges and universities in the United States..."),
+      p(class="big-first-letter", "Among the challenges facing prospective college students in the U.S. is the admissions rates of higher education institutions, particularly the most selective ones. Since 2001, the earliest year for which U.S. ED provides data, admission rates have remained relatively steady, on average. A slow decline in the first decade of the 21st century was followed by a slow rebound back to levels at the turn of the century. For many students, then, the chance of being accepted to college has not changed drastically. This data only shows part of the picture, though."),
+      p("U.S. ED’s College Scoreboard tracks thousands of schools across the country, and examining the patterns more closely, it becomes apparent that the most exclusive schools continue to accept declining percentages of applicants each year. The list of 100 schools with the lowest admission rates over the last 20 years has been dominated by the Ivy League and other private institutions with prestige and big-name recognition. The admission rates at these schools declined consistently from the 2001/02 admissions cycle and the 2019/20 cycle."),
+      p("Since the 2020/21 admissions cycle, admission rates at these already very selective institutions have plunged even further. The COVID-19 pandemic, a shift toward test-optional policies, and the increased access to applications through platforms such as the Common App likely exacerbated the long-term trend. More applicants for the same number of seats means lower acceptance rates, and schools have an incentive to keep them low to increase their perceived prestige."),
+      p("As long as students continue to apply, especially to more selective institutions, this pattern of declining admissions rates is likely to continue. For schools with less selective admissions criteria, or more available seats, the competition for a space is not significantly different to what it has been over the last two decades. Prospective students are not worse off on average than those in the past, but the fight for a place at the country’s most selective institutions is fiercer than ever."), 
       
-      p("Data from: U.S. Department of Education, College Scorecard and U.S. Bureau of Labor Statistics.")
+      br(), 
+      
+      p("Data from U.S. Department of Education, College Scorecard and U.S. Bureau of Labor Statistics.")
     )
   })
   
